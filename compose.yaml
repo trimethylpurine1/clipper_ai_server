@@ -1,0 +1,15 @@
+services:
+    postgres:
+        image: postgres:16
+        container_name: ai_clipper_postgres
+        environment:
+            POSTGRES_DB: ai_clipper
+            POSTGRES_USER: ai_clipper_user
+            POSTGRES_PASSWORD: ai_clipper_password
+        ports:
+            - "5432:5432"
+        volumes:
+            - ai_clipper_postgres_data:/var/lib/postgresql/data
+
+volumes:
+    ai_clipper_postgres_data:

@@ -1,0 +1,78 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+
+# Java / Spring Boot
+target/
+*.class
+*.log
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+application-local.properties
+application-dev.properties
+application-secret.properties
+*.pem
+*.key
+*.p12
+*.jks
+
+# Firebase service account keys
+*serviceAccount*.json
+*firebase*.json
+./fireBaseSecretCode.json
+fireBaseSecretCode.json
+
+# Stripe / local config
+stripe-cli.log
+
+# Node / Angular if frontend is in same repo later
+node_modules/
+dist/
+.angular/
