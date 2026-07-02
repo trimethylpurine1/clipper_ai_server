@@ -2,7 +2,7 @@ package com.clipperai.product.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.clipperai.product.entity.BillingCustomer;
+import com.clipperai.product.entity.billing.BillingCustomer;
 
 import java.util.Optional;
 import java.util.UUID;

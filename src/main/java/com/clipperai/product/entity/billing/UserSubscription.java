@@ -1,10 +1,12 @@
-package com.clipperai.product.entity;
+package com.clipperai.product.entity.billing;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import com.clipperai.product.entity.AppUser;
 
 @Entity
 @Table(name = "user_subscriptions")

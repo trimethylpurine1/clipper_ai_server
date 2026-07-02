@@ -1,4 +1,4 @@
-package com.clipperai.product.entity;
+package com.clipperai.product.entity.billing;
 
 import jakarta.persistence.*;
 import lombok.*;

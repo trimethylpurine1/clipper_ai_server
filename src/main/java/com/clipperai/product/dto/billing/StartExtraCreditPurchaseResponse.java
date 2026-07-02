@@ -7,9 +7,13 @@ public record StartExtraCreditPurchaseResponse(
         String publishableKey,
 
         UUID creditGrantId,
+        UUID billingInvoiceId,
 
         Integer quantity,
+        Integer creditsGranted,
         Integer amountDueCents,
-        String currency
+        String currency,
+
+        String localStatus
 ) {
 }

@@ -1,18 +1,28 @@
-package com.clipperai.product.service;
+package com.clipperai.product.service.billing;
 
 import com.clipperai.product.dto.billing.StartSubscriptionRequest;
 import com.clipperai.product.dto.billing.StartSubscriptionResponse;
 import com.clipperai.product.entity.AppUser;
+import com.clipperai.product.dto.billing.CancelSubscriptionResponse;
 import com.clipperai.product.entity.AuditAction;
-import com.clipperai.product.entity.BillingCustomer;
-import com.clipperai.product.entity.SubscriptionPlan;
-import com.clipperai.product.entity.UserSubscription;
+import com.clipperai.product.entity.billing.BillingCustomer;
+import com.clipperai.product.entity.billing.SubscriptionPlan;
+import com.clipperai.product.entity.billing.UserSubscription;
 import com.clipperai.product.repository.UserSubscriptionRepository;
+import com.clipperai.product.service.AuditService;
+import com.clipperai.product.service.CurrentUserService;
+import com.clipperai.product.service.RequestInfoService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Invoice;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.Subscription;
 import com.stripe.net.RequestOptions;
+import com.stripe.param.SubscriptionUpdateParams;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
+
 import com.stripe.param.SubscriptionCreateParams;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +36,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SubscriptionBillingService {
@@ -87,6 +98,145 @@ public class SubscriptionBillingService {
                 clientSecret,
                 stripeSubscription.getStatus(),
                 localSubscription.getStatus()
+        );
+    }
+    
+    
+    @Transactional
+    public CancelSubscriptionResponse cancelCurrentSubscriptionAtPeriodEnd(
+            HttpServletRequest request
+    ) throws StripeException {
+
+        String ipAddress = requestInfoService.getClientIp(request);
+        String userAgent = requestInfoService.getUserAgent(request);
+
+        AppUser currentUser = currentUserService.getCurrentUser();
+
+        List<String> cancellableStatuses = List.of(
+                "active",
+                "past_due",
+                "pending_payment"
+        );
+
+        UserSubscription localSubscription = userSubscriptionRepository
+                .findTopByUserAndStatusInOrderByCreatedAtDesc(currentUser, cancellableStatuses)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No active or pending subscription found for this user."
+                ));
+
+        if (localSubscription.getStripeSubscriptionId() == null
+                || localSubscription.getStripeSubscriptionId().isBlank()) {
+            throw new IllegalStateException(
+                    "Local subscription does not have a Stripe subscription ID."
+            );
+        }
+
+        log.info(
+                "User requested subscription cancellation. userId={}, localSubscriptionId={}, stripeSubscriptionId={}, ipAddress={}",
+                currentUser.getId(),
+                localSubscription.getId(),
+                localSubscription.getStripeSubscriptionId(),
+                ipAddress
+        );
+
+        if (Boolean.TRUE.equals(localSubscription.getCancelAtPeriodEnd())) {
+            log.info(
+                    "Subscription is already scheduled to cancel at period end. userId={}, localSubscriptionId={}, stripeSubscriptionId={}",
+                    currentUser.getId(),
+                    localSubscription.getId(),
+                    localSubscription.getStripeSubscriptionId()
+            );
+
+            return new CancelSubscriptionResponse(
+                    localSubscription.getId(),
+                    localSubscription.getStripeSubscriptionId(),
+                    localSubscription.getStripeStatus(),
+                    localSubscription.getStatus(),
+                    localSubscription.getCancelAtPeriodEnd(),
+                    localSubscription.getCurrentPeriodEnd(),
+                    "Subscription is already scheduled to cancel at the end of the current billing period."
+            );
+        }
+
+        String previousLocalStatus = localSubscription.getStatus();
+        String previousStripeStatus = localSubscription.getStripeStatus();
+        Boolean previousCancelAtPeriodEnd = localSubscription.getCancelAtPeriodEnd();
+
+        Subscription stripeSubscription;
+
+        try {
+            SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
+                    .setCancelAtPeriodEnd(true)
+                    .build();
+
+            RequestOptions requestOptions = RequestOptions.builder()
+                    .setIdempotencyKey("cancel-subscription-at-period-end-" + localSubscription.getId())
+                    .build();
+
+            stripeSubscription = Subscription.retrieve(localSubscription.getStripeSubscriptionId())
+                    .update(params, requestOptions);
+
+        } catch (StripeException stripeException) {
+            log.error(
+                    "Stripe subscription cancellation request failed. userId={}, localSubscriptionId={}, stripeSubscriptionId={}",
+                    currentUser.getId(),
+                    localSubscription.getId(),
+                    localSubscription.getStripeSubscriptionId(),
+                    stripeException
+            );
+
+            throw stripeException;
+        }
+
+        SubscriptionItem primaryItem = getPrimarySubscriptionItem(stripeSubscription);
+
+        localSubscription.setStripeStatus(stripeSubscription.getStatus());
+        localSubscription.setStatus(mapStripeSubscriptionStatusToLocalStatus(stripeSubscription.getStatus()));
+        localSubscription.setCancelAtPeriodEnd(Boolean.TRUE.equals(stripeSubscription.getCancelAtPeriodEnd()));
+        localSubscription.setCurrentPeriodStart(toOffsetDateTime(primaryItem.getCurrentPeriodStart()));
+        localSubscription.setCurrentPeriodEnd(toOffsetDateTime(primaryItem.getCurrentPeriodEnd()));
+
+        UserSubscription savedSubscription = userSubscriptionRepository.save(localSubscription);
+
+        auditService.recordUserAction(
+                currentUser,
+                AuditAction.SUBSCRIPTION_CANCELED,
+                "USER_SUBSCRIPTION",
+                savedSubscription.getId(),
+                ipAddress,
+                userAgent,
+                Map.ofEntries(
+                        Map.entry("cancelMode", "AT_PERIOD_END"),
+                        Map.entry("stripeSubscriptionId", savedSubscription.getStripeSubscriptionId()),
+                        Map.entry("previousLocalStatus", previousLocalStatus == null ? "" : previousLocalStatus),
+                        Map.entry("previousStripeStatus", previousStripeStatus == null ? "" : previousStripeStatus),
+                        Map.entry("previousCancelAtPeriodEnd", previousCancelAtPeriodEnd),
+                        Map.entry("newLocalStatus", savedSubscription.getStatus()),
+                        Map.entry("newStripeStatus", savedSubscription.getStripeStatus()),
+                        Map.entry("cancelAtPeriodEnd", savedSubscription.getCancelAtPeriodEnd()),
+                        Map.entry("currentPeriodStart", savedSubscription.getCurrentPeriodStart() == null ? "" : savedSubscription.getCurrentPeriodStart().toString()),
+                        Map.entry("currentPeriodEnd", savedSubscription.getCurrentPeriodEnd() == null ? "" : savedSubscription.getCurrentPeriodEnd().toString()),
+                        Map.entry("planId", savedSubscription.getPlan() == null ? "" : savedSubscription.getPlan().getId().toString()),
+                        Map.entry("planName", savedSubscription.getPlan() == null ? "" : savedSubscription.getPlan().getName())
+                )
+        );
+
+        log.info(
+                "Subscription scheduled for cancellation at period end. userId={}, localSubscriptionId={}, stripeSubscriptionId={}, currentPeriodEnd={}",
+                currentUser.getId(),
+                savedSubscription.getId(),
+                savedSubscription.getStripeSubscriptionId(),
+                savedSubscription.getCurrentPeriodEnd()
+        );
+
+        return new CancelSubscriptionResponse(
+                savedSubscription.getId(),
+                savedSubscription.getStripeSubscriptionId(),
+                savedSubscription.getStripeStatus(),
+                savedSubscription.getStatus(),
+                savedSubscription.getCancelAtPeriodEnd(),
+                savedSubscription.getCurrentPeriodEnd(),
+                "Subscription will cancel at the end of the current billing period."
         );
     }
 
@@ -228,6 +378,22 @@ public class SubscriptionBillingService {
                 Instant.ofEpochSecond(epochSeconds),
                 ZoneOffset.UTC
         );
+    }
+    
+    private String mapStripeSubscriptionStatusToLocalStatus(String stripeStatus) {
+        if (stripeStatus == null) {
+            return "inactive";
+        }
+
+        return switch (stripeStatus) {
+            case "active", "trialing" -> "active";
+            case "incomplete" -> "pending_payment";
+            case "past_due" -> "past_due";
+            case "canceled" -> "canceled";
+            case "unpaid" -> "payment_failed";
+            case "incomplete_expired" -> "expired";
+            default -> "inactive";
+        };
     }
     
     private SubscriptionItem getPrimarySubscriptionItem(Subscription stripeSubscription) {

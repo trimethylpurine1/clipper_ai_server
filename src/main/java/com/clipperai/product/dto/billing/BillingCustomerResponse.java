@@ -1,8 +1,8 @@
 package com.clipperai.product.dto.billing;
-import com.clipperai.product.entity.BillingCustomer;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import com.clipperai.product.entity.billing.BillingCustomer;
 
 public record BillingCustomerResponse(
         UUID id,

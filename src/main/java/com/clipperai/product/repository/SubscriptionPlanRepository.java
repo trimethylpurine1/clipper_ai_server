@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.clipperai.product.entity.SubscriptionPlan;
+import com.clipperai.product.entity.billing.SubscriptionPlan;
 
 public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPlan, UUID> {
     Optional<SubscriptionPlan> findByStripePriceId(String stripePriceId);

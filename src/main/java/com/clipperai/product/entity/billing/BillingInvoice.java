@@ -1,10 +1,12 @@
-package com.clipperai.product.entity;
+package com.clipperai.product.entity.billing;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import com.clipperai.product.entity.AppUser;
 
 @Entity
 @Table(
@@ -50,8 +52,9 @@ public class BillingInvoice {
     @Column(nullable = false, length = 10)
     private String currency;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String status;
+    private BillingInvoiceStatus status;
 
     @Column(nullable = false, length = 50)
     private String reason;

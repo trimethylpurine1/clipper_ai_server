@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.clipperai.product.entity.UsagePeriod;
+import com.clipperai.product.entity.billing.UsagePeriod;
 
 import java.time.OffsetDateTime;
 import java.util.List;

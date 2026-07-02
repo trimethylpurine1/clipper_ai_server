@@ -1,7 +1,7 @@
-package com.clipperai.product.service;
+package com.clipperai.product.service.billing;
 
 import com.clipperai.product.dto.billing.BillingPlanResponse;
-import com.clipperai.product.entity.SubscriptionPlan;
+import com.clipperai.product.entity.billing.SubscriptionPlan;
 import com.clipperai.product.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

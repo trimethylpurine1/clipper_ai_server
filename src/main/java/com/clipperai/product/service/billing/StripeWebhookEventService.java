@@ -1,7 +1,7 @@
-package com.clipperai.product.service;
+package com.clipperai.product.service.billing;
 
 
-import com.clipperai.product.entity.StripeWebhookEvent;
+import com.clipperai.product.entity.billing.StripeWebhookEvent;
 import com.clipperai.product.repository.StripeWebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

@@ -4,10 +4,16 @@ import com.clipperai.product.dto.billing.BillingCustomerResponse;
 import com.clipperai.product.dto.billing.BillingPlanResponse;
 import com.clipperai.product.dto.billing.StartSubscriptionRequest;
 import com.clipperai.product.dto.billing.StartSubscriptionResponse;
-import com.clipperai.product.entity.BillingCustomer;
-import com.clipperai.product.service.BillingCustomerService;
-import com.clipperai.product.service.BillingPlanService;
-import com.clipperai.product.service.SubscriptionBillingService;
+import com.clipperai.product.entity.billing.BillingCustomer;
+import com.clipperai.product.service.billing.BillingCustomerService;
+import com.clipperai.product.service.billing.BillingPlanService;
+import com.clipperai.product.service.billing.SubscriptionBillingService;
+import com.clipperai.product.dto.billing.StartExtraCreditPurchaseRequest;
+import com.clipperai.product.dto.billing.StartExtraCreditPurchaseResponse;
+import com.clipperai.product.service.billing.ExtraVideoCreditPurchaseService;
+import com.clipperai.product.dto.billing.CancelSubscriptionResponse;
+
+
 import com.stripe.exception.StripeException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -23,6 +29,7 @@ public class BillingController {
     private final BillingCustomerService billingCustomerService;
     private final BillingPlanService billingPlanService;
     private final SubscriptionBillingService subscriptionBillingService;
+    private final ExtraVideoCreditPurchaseService extraVideoCreditPurchaseService;
     
     //This is just for testing
 
@@ -58,6 +65,21 @@ public class BillingController {
             HttpServletRequest request
     ) throws StripeException {
         return subscriptionBillingService.startSubscription(requestDto, request);
+    }
+    
+    @PostMapping("/extra-video-credits/start")
+    public StartExtraCreditPurchaseResponse startExtraVideoCreditPurchase(
+            @Valid @RequestBody StartExtraCreditPurchaseRequest requestDto,
+            HttpServletRequest request
+    ) throws StripeException {
+        return extraVideoCreditPurchaseService.startPurchase(requestDto, request);
+    }
+    
+    @PostMapping("/subscriptions/me/cancel")
+    public CancelSubscriptionResponse cancelCurrentSubscription(
+            HttpServletRequest request
+    ) throws StripeException {
+        return subscriptionBillingService.cancelCurrentSubscriptionAtPeriodEnd(request);
     }
 }
     

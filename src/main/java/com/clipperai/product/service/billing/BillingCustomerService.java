@@ -1,9 +1,12 @@
-package com.clipperai.product.service;
+package com.clipperai.product.service.billing;
 
 import com.clipperai.product.entity.AppUser;
 import com.clipperai.product.entity.AuditAction;
-import com.clipperai.product.entity.BillingCustomer;
+import com.clipperai.product.entity.billing.BillingCustomer;
 import com.clipperai.product.repository.BillingCustomerRepository;
+import com.clipperai.product.service.AuditService;
+import com.clipperai.product.service.CurrentUserService;
+import com.clipperai.product.service.RequestInfoService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.net.RequestOptions;

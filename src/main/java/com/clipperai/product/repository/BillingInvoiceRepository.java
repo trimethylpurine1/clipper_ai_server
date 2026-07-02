@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.clipperai.product.entity.BillingInvoice;
+import com.clipperai.product.entity.billing.BillingInvoice;
 
 public interface BillingInvoiceRepository extends JpaRepository<BillingInvoice, UUID> {
     Optional<BillingInvoice> findByStripeInvoiceId(String stripeInvoiceId);

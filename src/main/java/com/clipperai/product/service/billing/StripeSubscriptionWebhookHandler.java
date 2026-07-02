@@ -1,8 +1,9 @@
-package com.clipperai.product.service;
+package com.clipperai.product.service.billing;
 
 import com.clipperai.product.entity.AuditAction;
-import com.clipperai.product.entity.UserSubscription;
+import com.clipperai.product.entity.billing.UserSubscription;
 import com.clipperai.product.repository.UserSubscriptionRepository;
+import com.clipperai.product.service.AuditService;
 import com.stripe.model.Event;
 import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
